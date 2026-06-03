@@ -2,6 +2,7 @@
 <p align="center">
   <a href="https://pypi.org/project/agentvuln/"><img src="https://img.shields.io/pypi/v/agentvuln?color=blue&label=version" alt="PyPI version"></a>
   <a href="https://pypi.org/project/agentvuln/"><img src="https://img.shields.io/pypi/dm/agentvuln?color=green" alt="PyPI downloads"></a>
+  <a href="https://github.com/Mikehzp/agentvuln"><img src="https://img.shields.io/github/stars/Mikehzp/agentvuln?style=social" alt="GitHub stars"></a>
   <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
   <img src="https://img.shields.io/badge/attacks-18-orange" alt="18 attacks">
@@ -132,7 +133,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run agent security scan
-        uses: nousresearch/agentsec@v1
+        uses: Mikehzp/agentvuln@v0.2.1
         with:
           target: hermes
           profile: daily
@@ -303,8 +304,8 @@ CI/CD: GitHub Action (action.yml + example workflow)
 ## Development
 
 ```bash
-git clone https://github.com/nousresearch/hermes
-cd hermes/agentsec
+git clone https://github.com/Mikehzp/agentvuln.git
+cd agentvuln
 
 # Install in editable mode
 pip install -e .
@@ -428,7 +429,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 运行安全扫描
-        uses: nousresearch/agentsec@v1
+        uses: Mikehzp/agentvuln@v0.2.1
         with:
           target: hermes
           profile: daily

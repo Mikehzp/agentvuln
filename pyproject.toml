@@ -34,9 +34,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/nousresearch/hermes"
-Repository = "https://github.com/nousresearch/hermes/tree/main/agentsec"
-Documentation = "https://hermes-agent.nousresearch.com/docs"
+Homepage = "https://github.com/Mikehzp/agentvuln"
+Repository = "https://github.com/Mikehzp/agentvuln"
+Documentation = "https://github.com/Mikehzp/agentvuln/blob/main/README.md"
 
 [project.scripts]
 agentsec = "agentsec.cli:main"
