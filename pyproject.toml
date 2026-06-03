@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentvuln"
+version = "0.2.1"
+description = "AI Agent Security Scanner — detect tool-calling vulnerabilities in LLM agents"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Nous Research" },
+]
+
+keywords = ["security", "ai-agent", "llm", "pentest", "scanning"]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "openai>=1.0.0",
+    "rich>=13.0.0",
+    "pyyaml>=6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/nousresearch/hermes"
+Repository = "https://github.com/nousresearch/hermes/tree/main/agentsec"
+Documentation = "https://hermes-agent.nousresearch.com/docs"
+
+[project.scripts]
+agentsec = "agentsec.cli:main"
+agentvuln = "agentsec.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["agentsec*"]
+
+[tool.setuptools.package-data]
+agentsec = ["py.typed"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]

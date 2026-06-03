@@ -1,0 +1,189 @@
+# Agent Security Scanner — CI/CD Integration
+#
+# This workflow runs periodic security scans against your AI agent
+# to detect vulnerabilities like prompt injection, privilege escalation,
+# data leaks, and tool abuse.
+#
+# ── Quick Start ─────────────────────────────────────────────
+# 1. Place this file at: .github/workflows/agentsec-scan.yml
+# 2. Adjust the 'target' input to match your setup
+# 3. Set a schedule or trigger on push
+# 4. Check the 'Security Scan' action tab for results
+#
+# ── Requirements ────────────────────────────────────────────
+# - The agentsec package must be in the repo (or on PyPI)
+# - API key configured in GitHub Secrets (e.g. OPENROUTER_API_KEY)
+# - If scanning a Hermes agent, the agent's config.yaml must be
+#   accessible in the CI environment (or provide API key via secret)
+#
+# ── Reference ───────────────────────────────────────────────
+# All inputs: target, profile, fail-on, output-format, api-key,
+#             attacks, fix, dry-run, install-from
+# See action.yml in agentsec/ for descriptions.
+# ────────────────────────────────────────────────────────────
+
+name: Agent Security Scan
+
+on:
+  # ── Scheduled: daily deep scan ───────────────────────────
+  schedule:
+    - cron: '0 6 * * *'   # Every day at 06:00 UTC
+
+  # ── Manual trigger from GitHub UI ────────────────────────
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Scan target (hermes or trace.json path)'
+        required: true
+        default: 'hermes'
+      profile:
+        description: 'Scan profile (quick / daily / full)'
+        required: true
+        default: 'full'
+      fail-on:
+        description: 'Fail CI threshold (none / low / medium / high / critical)'
+        required: true
+        default: 'high'
+
+  # ── On push to main (quick scan) ─────────────────────────
+  push:
+    branches: [main]
+    paths:
+      - 'hermes/**'
+      - 'agentsec/**'
+      - '.github/workflows/agentsec-scan.yml'
+
+  # ── On PR to main ────────────────────────────────────────
+  pull_request:
+    branches: [main]
+    paths:
+      - 'hermes/**'
+      - 'agentsec/**'
+
+# ── Jobs ───────────────────────────────────────────────────
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+
+      # ── Check out the repo ──────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Run the security scan ───────────────────────────
+      # Uses the composite action defined in agentsec/action.yml
+      - name: Scan AI agent security
+        uses: ./agentsec
+        with:
+          # ── Scan target ────────────────────────────────
+          # 'hermes' = local Hermes agent
+          # path/to/trace.json = offline trace analysis
+          target: ${{ inputs.target || 'hermes' }}
+
+          # ── Scan profile ───────────────────────────────
+          # quick (5 attacks, ~1 min)
+          # daily (8 attacks, ~2 min)
+          # full  (14 attacks, ~4.5 min)
+          profile: ${{ inputs.profile || 'full' }}
+
+          # ── Fail threshold ─────────────────────────────
+          # none     = never fail CI (report only)
+          # low      = fail on LOW+
+          # medium   = fail on MEDIUM+
+          # high     = fail on HIGH+ (default)
+          # critical = fail only on CRITICAL
+          fail-on: ${{ inputs.fail-on || 'high' }}
+
+          # ── Report format ──────────────────────────────
+          output-format: html
+
+          # ── Auto-fix vulnerabilities (caution!) ────────
+          # fix: false
+          # dry-run: false
+
+          # ── API key for LLM provider ───────────────────
+          # Only needed if the target agent doesn't have its
+          # own config.yaml in CI. Store as GitHub Secret.
+          # api-key: ${{ secrets.OPENROUTER_API_KEY }}
+
+          # ── Install mode ───────────────────────────────
+          # 'local' = from repo's agentsec/ directory
+          # 'pypi'  = from PyPI (once published)
+          install-from: local
+
+# ══════════════════════════════════════════════════════════════
+# ── Multi-Profile Variant ────────────────────────────────────
+# Run different profiles in parallel for deeper coverage.
+# ══════════════════════════════════════════════════════════════
+# (Uncomment to use)
+#
+# jobs:
+#   quick-scan:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: ./agentsec
+#         with:
+#           profile: quick
+#           fail-on: critical
+#           output-format: json
+#
+#   daily-scan:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: ./agentsec
+#         with:
+#           profile: daily
+#           fail-on: high
+#           output-format: html
+#
+#   full-scan:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: ./agentsec
+#         with:
+#           profile: full
+#           fail-on: medium
+#           output-format: html
+
+# ══════════════════════════════════════════════════════════════
+# ── Offline/Event-Driven Variant ─────────────────────────────
+# Scan a trace file from a previous agent interaction.
+# ══════════════════════════════════════════════════════════════
+# (Uncomment to use)
+#
+# jobs:
+#   scan-trace:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: ./agentsec
+#         with:
+#           target: traces/latest.json
+#           profile: full
+#           fail-on: medium
+#           output-format: md
+
+# ══════════════════════════════════════════════════════════════
+# ── Scan + Auto-Fix Variant ──────────────────────────────────
+# WARNING: modifies config.yaml / SOUL.md automatically.
+# ══════════════════════════════════════════════════════════════
+# (Uncomment to use)
+#
+# jobs:
+#   scan-and-fix:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: ./agentsec
+#         with:
+#           profile: full
+#           fail-on: medium
+#           dry-run: true          # Preview first
+#       - uses: ./agentsec
+#         with:
+#           profile: full
+#           fix: true              # Apply fixes
+#           fail-on: high

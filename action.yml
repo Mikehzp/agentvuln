@@ -1,0 +1,201 @@
+# Agent Security Scanner — GitHub Composite Action
+#
+# Usage in your workflow:
+#
+#   - name: Scan AI agent security
+#     uses: ./agentsec
+#     with:
+#       target: hermes
+#       profile: daily
+#       fail-on: high
+#
+name: 'Agent Security Scan'
+author: 'Nous Research'
+description: >-
+  Scan AI agents for security vulnerabilities (prompt injection,
+  privilege escalation, data leaks, tool abuse, and more).
+
+branding:
+  icon: 'shield'
+  color: 'orange'
+
+inputs:
+  target:
+    description: >-
+      Target to scan. Use 'hermes' for the local Hermes agent,
+      or a path to a trace.json file for offline analysis.
+    required: false
+    default: 'hermes'
+
+  profile:
+    description: >-
+      Scan profile. Controls how many attacks are run:
+      - quick: 5 most critical attacks (~1 min)
+      - daily: 8 common attacks (~2 min)
+      - full: all 14 attacks (~4.5 min)
+    required: false
+    default: 'full'
+
+  output-format:
+    description: >-
+      Report output format. One of: html, json, md.
+    required: false
+    default: 'html'
+
+  fail-on:
+    description: >-
+      Threshold for failing the CI run. Set to 'none' to never fail,
+      or one of: low, medium, high, critical.
+      Example: 'high' means vulnerabilities at HIGH or CRITICAL cause failure.
+    required: false
+    default: 'high'
+
+  api-key:
+    description: >-
+      API key for the LLM provider (e.g. OpenRouter, DeepSeek, Anthropic).
+      Overrides config.yaml or environment variable. If the target agent
+      has its own API key configured, this is typically not needed.
+    required: false
+    default: ''
+
+  attacks:
+    description: >-
+      Comma-separated list of specific attacks to run.
+      Overrides --profile if set.
+      Example: "system_prompt_leak,privilege_escalation"
+    required: false
+    default: ''
+
+  fix:
+    description: >-
+      Auto-fix discovered vulnerabilities.
+      WARNING: this modifies config.yaml and SOUL.md on the target system.
+      Use with caution in CI environments.
+    required: false
+    default: 'false'
+
+  dry-run:
+    description: >-
+      Show what fixes would be applied without actually modifying files.
+    required: false
+    default: 'false'
+
+  install-from:
+    description: >-
+      Where to install agentsec from:
+      - 'pypi': pip install agentsec (once published)
+      - 'local': uses the agentsec/ directory in the current repo
+      - 'source': pip install from the current repo's agentsec/
+    required: false
+    default: 'local'
+
+runs:
+  using: 'composite'
+  steps:
+    # ── Set up Python ──────────────────────────────────────────
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    # ── Install agentsec ───────────────────────────────────────
+    - name: Install agentsec (local)
+      if: inputs.install-from == 'local'
+      shell: bash
+      run: |
+        pip install --quiet "${{ github.action_path }}"
+
+    - name: Install agentsec (source)
+      if: inputs.install-from == 'source'
+      shell: bash
+      run: |
+        pip install --quiet "${{ github.action_path }}"
+
+    - name: Install agentsec (PyPI)
+      if: inputs.install-from == 'pypi'
+      shell: bash
+      run: |
+        pip install --quiet agentsec
+
+    # ── Set API key if provided ────────────────────────────────
+    - name: Configure API key
+      if: inputs.api-key != ''
+      shell: bash
+      env:
+        AGENTSEC_API_KEY: ${{ inputs.api-key }}
+      run: |
+        echo "AGENTSEC_API_KEY=${AGENTSEC_API_KEY}" >> "$GITHUB_ENV"
+        echo "OPENROUTER_API_KEY=${AGENTSEC_API_KEY}" >> "$GITHUB_ENV"
+
+    # ── Build command ──────────────────────────────────────────
+    - name: Run security scan
+      shell: bash
+      env:
+        TARGET: ${{ inputs.target }}
+        PROFILE: ${{ inputs.profile }}
+        ATTACKS: ${{ inputs.attacks }}
+        OUTPUT: ${{ inputs.output-format }}
+        FIX: ${{ inputs.fix }}
+        DRY_RUN: ${{ inputs.dry-run }}
+      run: |
+        ARGS=""
+
+        # Profile or specific attacks
+        if [ -n "${ATTACKS}" ]; then
+          ARGS="${ARGS} --attacks ${ATTACKS}"
+        elif [ -n "${PROFILE}" ]; then
+          ARGS="${ARGS} --profile ${PROFILE}"
+        fi
+
+        # Output format
+        [ -n "${OUTPUT}" ] && ARGS="${ARGS} -o report.${OUTPUT}"
+
+        # Fix mode
+        [ "${FIX}" = "true" ] && ARGS="${ARGS} --fix"
+        [ "${DRY_RUN}" = "true" ] && ARGS="${ARGS} --dry-run"
+
+        echo "::group::🔍 Running: agentsec scan ${TARGET}${ARGS}"
+        agentsec scan "${TARGET}" ${ARGS}
+        EXIT=$?
+        echo "::endgroup::"
+
+        echo "SCAN_EXIT=$EXIT" >> "$GITHUB_ENV"
+        echo "Scan exit code: $EXIT"
+
+    # ── Upload report as artifact ──────────────────────────────
+    - name: Upload scan report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: agentsec-report
+        path: |
+          report.html
+          report.json
+          report.md
+        if-no-files-found: ignore
+
+    # ── Fail CI based on threshold ─────────────────────────────
+    - name: Check fail threshold
+      if: always()
+      shell: bash
+      env:
+        FAIL_ON: ${{ inputs.fail-on }}
+      run: |
+        if [ "${FAIL_ON}" = "none" ]; then
+          echo "🔒 Fail-on disabled — scan results recorded but CI will not fail."
+          exit 0
+        fi
+
+        # Parse scan exit code:
+        #   0 = no vulnerabilities found
+        #   1 = vulnerabilities found (at any severity)
+        SCAN_EXIT=${SCAN_EXIT:-0}
+
+        if [ "${SCAN_EXIT}" = "0" ]; then
+          echo "✅ No vulnerabilities detected."
+          exit 0
+        fi
+
+        # If fail-on is set and scan found issues, fail
+        echo "❌ Scan found vulnerabilities at or above '${FAIL_ON}' threshold."
+        exit 1

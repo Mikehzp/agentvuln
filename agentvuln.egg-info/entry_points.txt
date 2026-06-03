@@ -1,0 +1,3 @@
+[console_scripts]
+agentsec = agentsec.cli:main
+agentvuln = agentsec.cli:main
