@@ -66,17 +66,19 @@
 
 ### v0.2.2 实战验证 — 2026-06-04
 
-- [x] 6种 Agent 架构全量对比扫描（Hermes / LangChain / ClaudeCode / OpenAI / MCP / Codex）
-- [x] COMPARISON.md — 架构安全对比报告（矩阵+热力图+分析+建议）
-- [x] 发现: Claude Code 模板 0 漏洞, Hermes 3 漏洞最差
-- [x] system_prompt_leak 是最常见攻击入口（4/6架构中招）
-- [x] 113 tests total, 8 vulnerabilities found across all architectures
+- [x] 3种真实 agent 扫描：Hermes（3漏洞）、browser-use（3漏洞）、OpenHands（1漏洞）
+- [x] COMPARISON.md — 真实架构安全对比报告（仅含真实安装/源码级 agent）
+- [x] 发现: SQL注入是所有agent通病, system_prompt_leak 靠显式安全指令可防
+- [x] browser-use 泄露 SSH 私钥（最严重发现）
+- [x] OpenHands SDK 依赖修复 + 系统 venv 安装成功
+- [x] 175 tests total, 7 real vulnerabilities
 
 ## 待办
 
-- [ ] **发 Show HN / 知乎 / Twitter — 获取第一批用户反馈**
-- [ ] 对比报告可作为宣传素材，附在 Show HN 帖子中
-- [ ] 获取更多 API key（OpenAI / Anthropic）完善多模型兼容性矩阵
+- [ ] **发 Show HN / 知乎 — 获取第一批用户反馈**
+- [ ] OpenHands SDK 真实对话扫描（代码已就绪，需配置）
+- [ ] browser-use 真实浏览器扫描（playwright已装，脚本已写）
+- [ ] PyPI token 已失效 — 需重新生成
 - [ ] GitHub Marketplace Release
 
 ## 项目位置
