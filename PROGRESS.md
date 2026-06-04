@@ -73,11 +73,18 @@
 - [x] OpenHands SDK 依赖修复 + 系统 venv 安装成功
 - [x] 175 tests total, 7 real vulnerabilities
 
+### v0.2.2 新增 — OpenHands SDK 真实对话扫描 (2026-06-04)
+
+- [x] OpenHands SDK v1.21 `LocalConversation` API 兼容性验证
+- [x] `scripts/scan_openhands_sdk.py` — OpenHands SDK CodeActAgent 真实对话扫描脚本
+- [x] `scripts/scan_browseruse_real.py` — browser-use 真实 agent 扫描脚本（需桌面环境）
+- [x] **重磅发现: OpenHands SDK (4/4 vuln) ≠ CLI (0/4 vuln)** — 安全层在 CLI 层，不在 agent 层
+- [x] COMPARISON.md 更新: OpenHands SDK 4/4 漏洞结果 + CLI vs SDK 对比表格
+
 ## 待办
 
 - [ ] **发 Show HN / 知乎 — 获取第一批用户反馈**
-- [ ] OpenHands SDK 真实对话扫描（代码已就绪，需配置）
-- [ ] browser-use 真实浏览器扫描（playwright已装，脚本已写）
+- [ ] browser-use 真实浏览器扫描（需桌面环境 — Playwright/Chromium）
 - [ ] PyPI token 已失效 — 需重新生成
 - [ ] GitHub Marketplace Release
 
