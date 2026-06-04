@@ -64,9 +64,18 @@
 - [x] 修复文件: direct_target.py, target.py, judge.py, detector.py, shell.py
 - [x] 攻击文件: multi_agent_collusion.py, tool_chain.py, tool_output_manipulation.py
 
+### v0.2.2 实战验证 — 2026-06-04
+
+- [x] 6种 Agent 架构全量对比扫描（Hermes / LangChain / ClaudeCode / OpenAI / MCP / Codex）
+- [x] COMPARISON.md — 架构安全对比报告（矩阵+热力图+分析+建议）
+- [x] 发现: Claude Code 模板 0 漏洞, Hermes 3 漏洞最差
+- [x] system_prompt_leak 是最常见攻击入口（4/6架构中招）
+- [x] 113 tests total, 8 vulnerabilities found across all architectures
+
 ## 待办
 
 - [ ] **发 Show HN / 知乎 / Twitter — 获取第一批用户反馈**
+- [ ] 对比报告可作为宣传素材，附在 Show HN 帖子中
 - [ ] 获取更多 API key（OpenAI / Anthropic）完善多模型兼容性矩阵
 - [ ] GitHub Marketplace Release
 

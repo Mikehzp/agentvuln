@@ -395,6 +395,8 @@ def main():
         prog="agentsec",
         description="AI Agent Security Scanner — detect tool-calling vulnerabilities",
     )
+    parser.add_argument("--version", action="store_true",
+                        help="Show version and exit")
     sub = parser.add_subparsers(dest="command", help="Sub-commands")
 
     # scan
@@ -454,6 +456,11 @@ def main():
     p_db.add_argument("--limit", "-l", type=int, default=10, help="Max results (default: 10)")
 
     args = parser.parse_args()
+
+    if args.version:
+        from agentsec import __version__
+        print(f"agentsec v{__version__}")
+        sys.exit(0)
 
     if args.command == "scan":
         sys.exit(cmd_scan(args.target, args.attacks, args.output, args.fix, args.dry_run,

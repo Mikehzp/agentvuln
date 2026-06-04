@@ -133,7 +133,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run agent security scan
-        uses: Mikehzp/agentvuln@v0.2.1
+        uses: Mikehzp/agentvuln@v0.2.2
         with:
           target: hermes
           profile: daily
@@ -235,7 +235,7 @@ agentsec scan hermes --profile full -o report.html
 ## Project Status
 
 ```
-agentsec CLI v0.2.0
+agentsec CLI v0.2.2
 ├─ scan    — 18 attacks, 9 providers, 6 templates, 5 trace formats
 ├─ shell   — interactive probe shell
 ├─ watch   — cron-based recurring scanning
@@ -429,7 +429,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 运行安全扫描
-        uses: Mikehzp/agentvuln@v0.2.1
+        uses: Mikehzp/agentvuln@v0.2.2
         with:
           target: hermes
           profile: daily
