@@ -1,4 +1,4 @@
-# agentsec 开发进度 — 2026-06-03
+# agentvuln 开发进度 — 2026-06-03
 
 ## 已完成
 
@@ -40,24 +40,38 @@
 - [x] LLM Judge 改进: 结构化评判标准 + 严重等级规则 + 更长上下文
 - [x] Tool call 格式修复: `function.name` → `{name, arguments}` 标准格式（解决 DeepSeek 400 错误）
 - [x] `trace_adapters.py` — LangSmith / LangChain / Claude Code / OpenAI trace 适配器
-- [x] `compatibility-matrix.json` — DeepSeek 验证通过 (5/5 quick), 其他 provider 因缺 key 跳过
+- [x] `compatibility-matrix.json` — DeepSeek 验证通过 (5/5 quick)
 - [x] self-test 7/7 持续通过
 
 ### v0.3.0 开发者产品化 (2026-06-03)
 
-- [x] 修复 pyproject.toml — setuptools License 兼容性问题
-- [x] 重写 README.md — 中英文完整文档 + 攻击表 + 架构图 + 竞品对比
-- [x] 重新构建 dist（pyproject.toml + README 变更后）
-- [x] 打开 PyPI 注册页面待用户完成
+- [x] 修复 pyproject.toml — setuptools License 兼容性
+- [x] 重写 README.md — 中英文完整文档 + 攻击表 + 架构图 + 竞品对比 + badges
+- [x] PyPI 发布: `agentvuln` v0.2.0 → v0.2.1
+- [x] CLI 别名: `agentsec` + `agentvuln` 均可
+- [x] 独立 GitHub 仓库: [Mikehzp/agentvuln](https://github.com/Mikehzp/agentvuln)
+- [x] GitHub credentials: token 认证配置完毕
+- [x] DNS 绕过: /etc/hosts 配了 github.com 直连 IP
+- [x] 全量扫描报告: 18 attacks, 1 vuln found (system_prompt_leak HIGH)
+- [x] 每日下载统计 cron job: 每天9点
+
+### v0.2.2 修复 — 2026-06-04
+
+- [x] 修复 DirectAPITarget 的 function 字段格式（dict→name string）
+- [x] 修复 8 处 `'dict' object has no attribute 'lower'` / `sequence item 0: expected str instance` 执行错误
+- [x] 增加 LLM Judge JSON 解析的 regex fallback（解决 JSON parse error）
+- [x] 添加 `_tool_name()` 防御性提取函数，兼容新旧两种 function 格式
+- [x] 修复文件: direct_target.py, target.py, judge.py, detector.py, shell.py
+- [x] 攻击文件: multi_agent_collusion.py, tool_chain.py, tool_output_manipulation.py
 
 ## 待办
 
-- [ ] 完成 PyPI 注册 → 配置 `.pypirc` → `twine upload dist/*`
-- [ ] 获取更多 API key（OpenAI / OpenRouter / Anthropic）以完成多模型兼容性矩阵
-- [ ] 实时运行时监控模式（非定时扫描，而是 hook 进 agent 实际运行时检测）
-- [ ] 发布 GitHub Marketplace Release
-- [ ] 提取 agentsec 为独立 repo？（决定项目独立性和定位）
+- [ ] **发 Show HN / 知乎 / Twitter — 获取第一批用户反馈**
+- [ ] 获取更多 API key（OpenAI / Anthropic）完善多模型兼容性矩阵
+- [ ] GitHub Marketplace Release
 
 ## 项目位置
 
-/mnt/d/0Agent/hermes/agentsec/
+- 代码: `/mnt/d/0Agent/hermes/agentsec/`
+- GitHub: `https://github.com/Mikehzp/agentvuln`
+- PyPI: `https://pypi.org/project/agentvuln/`

@@ -47,7 +47,10 @@ class ToolChainContamination:
 
             # Check for dangerous tool chains (sequence of tools)
             if len(calls) >= 2:
-                tool_names = [c.get("function", "?") for c in calls]
+                tool_names = []
+                for c in calls:
+                    fn = c.get("function", "")
+                    tool_names.append(fn if isinstance(fn, str) else fn.get("name", "?") if isinstance(fn, dict) else "?")
                 chain = " → ".join(tool_names)
                 tool_chain_found.append(f"{payload['label']}: {chain}")
                 exploited = True

@@ -118,7 +118,8 @@ class ToolCallAnalyzer:
         confidence = "low"
 
         for call in tool_calls:
-            fn = call.get("function", "?")
+            fn_data = call.get("function", "?")
+            fn = fn_data if isinstance(fn_data, str) else fn_data.get("name", "?") if isinstance(fn_data, dict) else "?"
             args = call.get("arguments", {})
             if isinstance(args, str):
                 try:
@@ -273,11 +274,16 @@ class LLMJudge:
                 max_tokens=300,
             )
             text = resp.choices[0].message.content.strip()
-            # Extract JSON
+            # Extract JSON — handle markdown fences and garbage
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0].strip()
             elif "```" in text:
                 text = text.split("```")[1].split("```")[0].strip()
+
+            # Try to find JSON object in the response with regex
+            json_match = re.search(r'\{[\s\S]*"exploited"[\s\S]*\}', text)
+            if json_match:
+                text = json_match.group()
 
             result = json.loads(text)
             return DetectionVerdict(

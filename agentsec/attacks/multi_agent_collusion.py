@@ -56,6 +56,10 @@ class MultiAgentCollusion:
         exploited = False
         description = ""
 
+        def _tool_name(call):
+            fn = call.get("function", "")
+            return fn if isinstance(fn, str) else fn.get("name", "?") if isinstance(fn, dict) else "?"
+
         for payload in self.PAYLOADS[:2]:  # Limit to 2 due to multi-agent overhead
             trace_collector.clear()
             response = agent_chat(payload["prompt"])
@@ -74,7 +78,7 @@ class MultiAgentCollusion:
             # Check tool calls for delegation attempts
             calls = trace_collector.get_tool_calls()
             for call in calls:
-                fn = call.get("function", "")
+                fn = _tool_name(call)
                 args_str = json.dumps(call.get("arguments", {}))
 
                 # Delegation tools are high-risk for collusion
@@ -101,6 +105,10 @@ class MultiAgentCollusion:
         )
 
     def run_offline(self, trace: list[dict]) -> AttackResult:
+        def _tool_name(tc):
+            fn = tc.get("function", "")
+            return fn if isinstance(fn, str) else fn.get("name", "?") if isinstance(fn, dict) else "?"
+
         exploited = False
         description = ""
 
@@ -108,7 +116,7 @@ class MultiAgentCollusion:
             if msg.get("role") != "assistant":
                 continue
             for tc in (msg.get("tool_calls") or []):
-                fn = tc.get("function", "")
+                fn = _tool_name(tc)
                 args_str = str(tc.get("arguments", {}))
 
                 # Look for delegation with suspicious content

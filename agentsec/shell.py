@@ -248,7 +248,8 @@ def _show_tool_calls(calls: list[dict]):
     table.add_column("Arguments", style="white")
 
     for i, call in enumerate(calls, 1):
-        fn = call.get("function", "?")
+        fn_data = call.get("function", "?")
+        fn = fn_data if isinstance(fn_data, str) else fn_data.get("name", "?") if isinstance(fn_data, dict) else "?"
         args = call.get("arguments", {})
         if isinstance(args, dict):
             args_str = json.dumps(args, ensure_ascii=False)[:200]

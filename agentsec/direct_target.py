@@ -123,8 +123,11 @@ class DirectAPITarget:
                             args = json.loads(args)
                         except json.JSONDecodeError:
                             args = {"raw": args}
+                    fn_data = tc.get("function", {})
+                    if isinstance(fn_data, dict):
+                        fn_data = fn_data.get("name", "?")
                     calls.append({
-                        "function": tc.get("function", "?"),
+                        "function": fn_data,
                         "arguments": args,
                     })
         return calls

@@ -29,7 +29,9 @@ def extract_tool_sequence(trace: list[dict]) -> list[str]:
         if msg.get("role") != "assistant":
             continue
         for tc in msg.get("tool_calls") or []:
-            sequence.append(tc.get("function", "?") or tc.get("name", "?"))
+            fn_data = tc.get("function", "?") or tc.get("name", "?")
+            fn = fn_data if isinstance(fn_data, str) else fn_data.get("name", "?") if isinstance(fn_data, dict) else "?"
+            sequence.append(fn)
     return sequence
 
 
