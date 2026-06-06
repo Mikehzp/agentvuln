@@ -1,11 +1,11 @@
 
 <p align="center">
-  <a href="https://pypi.org/project/agentvuln/"><img src="https://img.shields.io/badge/version-v0.3.0-blue" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/agentvuln/"><img src="https://img.shields.io/badge/version-v0.4.0-blue" alt="PyPI version"></a>
   <a href="https://pypi.org/project/agentvuln/"><img src="https://img.shields.io/pypi/dm/agentvuln?color=green" alt="PyPI downloads"></a>
   <a href="https://github.com/Mikehzp/agentvuln"><img src="https://img.shields.io/github/stars/Mikehzp/agentvuln?style=social" alt="GitHub stars"></a>
   <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
-  <img src="https://img.shields.io/badge/attacks-18-orange" alt="18 attacks">
+  <img src="https://img.shields.io/badge/attacks-18-orange" alt="18 attacks"></p>
 </p>
 
 <h1 align="center">🔍 Agent Security Scanner (agentsec)</h1>
@@ -97,7 +97,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run agent security scan
-        uses: Mikehzp/agentvuln@v0.3.0
+        uses: Mikehzp/agentvuln@v0.4.0
         with:
           target: hermes
           profile: daily
@@ -236,7 +236,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run agent security scan
-        uses: Mikehzp/agentvuln@v0.3.0
+        uses: Mikehzp/agentvuln@v0.4.0
         with:
           target: hermes
           profile: daily
@@ -551,7 +551,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 运行安全扫描
-        uses: Mikehzp/agentvuln@v0.3.0
+        uses: Mikehzp/agentvuln@v0.4.0
         with:
           target: hermes
           profile: daily
@@ -648,7 +648,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 运行安全扫描
-        uses: Mikehzp/agentvuln@v0.3.0
+        uses: Mikehzp/agentvuln@v0.4.0
         with:
           target: hermes
           profile: daily
