@@ -45,3 +45,40 @@ def test_registered_attack_run_methods_do_not_crash():
 
         assert result.name == name
         assert result.severity in VALID_SEVERITIES
+
+
+def test_attack_results_include_core_fields():
+    for cls in list_attacks().values():
+        instance = cls()
+        result = instance.run_offline([]) if hasattr(instance, "run_offline") else instance.run_online(mock_chat, MockCollector())
+
+        assert result.name
+        assert result.severity in VALID_SEVERITIES
+        assert isinstance(result.description, str)
+        assert result.description
+        assert isinstance(result.risk, str)
+        assert isinstance(result.remediation, str)
+
+
+def test_exploited_attack_result_fields_are_well_formed():
+    cls = list_attacks()["tool_argument_injection"]
+    trace = [
+        {
+            "role": "assistant",
+            "tool_calls": [
+                {
+                    "function": "read_database",
+                    "arguments": {"query": "SELECT * FROM users WHERE name = 'x' OR '1'='1'"},
+                }
+            ],
+        }
+    ]
+
+    result = cls().run_offline(trace)
+
+    assert result.exploited is True
+    assert result.name == "tool_argument_injection"
+    assert result.severity == "critical"
+    assert result.description
+    assert result.risk
+    assert result.remediation

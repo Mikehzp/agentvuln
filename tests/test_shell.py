@@ -35,3 +35,11 @@ def test_shell_init_and_exit_does_not_crash(monkeypatch):
     monkeypatch.setattr(builtins, "input", lambda _prompt="": "/exit")
 
     assert cmd_shell("fake-target") == 0
+
+
+def test_shell_unknown_command(monkeypatch):
+    commands = iter(["/unknown", "/exit"])
+    monkeypatch.setattr("agentsec.target.resolve_target", lambda _target: FakeAgent())
+    monkeypatch.setattr(builtins, "input", lambda _prompt="": next(commands))
+
+    assert cmd_shell("fake-target") == 0

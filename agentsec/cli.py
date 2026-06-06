@@ -499,6 +499,9 @@ def main():
     # self-test
     p_st = sub.add_parser("self-test", help="Verify scanner can detect deliberately planted vulnerabilities")
 
+    # benchmark
+    p_bench = sub.add_parser("benchmark", help="Run deterministic detection benchmark cases")
+
     # db
     p_db = sub.add_parser("db", help="Query the local security scan database")
     p_db.add_argument("subcommand", nargs="?", default="summary",
@@ -531,6 +534,11 @@ def main():
     elif args.command == "self-test":
         from agentsec.selftest import run_all
         sys.exit(0 if run_all() else 1)
+    elif args.command == "benchmark":
+        from agentsec.benchmark import run_benchmark, format_summary
+        summary = run_benchmark()
+        console.print(format_summary(summary))
+        sys.exit(0 if summary.failed == 0 else 1)
     elif args.command == "db":
         sys.exit(cmd_db(args.subcommand, args.target, args.limit))
     else:
