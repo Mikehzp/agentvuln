@@ -19,6 +19,15 @@ console = Console()
 ERR = Console(stderr=True)
 
 
+def parse_shell_command(user_input: str) -> tuple[str, list[str]] | None:
+    """Parse slash commands used by the interactive shell."""
+    text = user_input.strip()
+    if not text.startswith("/"):
+        return None
+    cmd, *args = shlex.split(text)
+    return cmd.lower(), args
+
+
 def cmd_shell(target: str, system_prompt: str | None = None):
     """Open an interactive probe shell against a target agent."""
 
@@ -62,8 +71,7 @@ def cmd_shell(target: str, system_prompt: str | None = None):
 
         # ── Slash commands ──────────────────────────────────
         if user_input.startswith("/"):
-            cmd, *args = shlex.split(user_input)
-            cmd = cmd.lower()
+            cmd, args = parse_shell_command(user_input)
 
             if cmd == "/quit" or cmd == "/exit":
                 break

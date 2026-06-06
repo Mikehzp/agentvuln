@@ -1,4 +1,4 @@
-# agentvuln 开发进度 — 2026-06-03
+# agentvuln 开发进度 — 2026-06-06
 
 ## 已完成
 
@@ -81,11 +81,29 @@
 - [x] **重磅发现: OpenHands SDK (4/4 vuln) ≠ CLI (0/4 vuln)** — 安全层在 CLI 层，不在 agent 层
 - [x] COMPARISON.md 更新: OpenHands SDK 4/4 漏洞结果 + CLI vs SDK 对比表格
 
+### v0.3.0 产品化收尾 (2026-06-06) — Codex 合作轮
+
+- [x] Hermes 解耦: `--hermes-home` 参数, friendly skip, help 标 `[Hermes only]`
+- [x] engine.py 友好提示: target=hermes 失败时不崩
+- [x] 新增 tests/: conftest.py + 6 个测试文件, 共 20 测试 (384 行)
+- [x] README: 首行加 PyPI 包名说明
+- [x] `--fail-on` CI 阈值: `_should_fail()` + action.yml 集成
+- [x] UTF-8 兼容: `_configure_stdio()` Windows 控制台
+- [x] db.py read-only 模式: 查询走 `mode=ro`
+- [x] action.yml 包名修复: `agentsec` → `agentvuln`
+- [x] HTML escape: `html.escape()` 防 XSS
+- [x] 新增 tests/conftest.py: 共享 fixtures
+- [x] 抽出 `shell.parse_shell_command()` 可测性改进
+- [x] 加 LICENSE (MIT)
+- [x] 补 .gitignore: `data/`, `report-*.html`
+- [x] 版本 bump: v0.2.2 → v0.3.0
+- [x] 加 CI test workflow: `.github/workflows/test.yml`
+- [x] PyPI token 已修复 — v0.2.2 发布成功
+
 ## 待办
 
 - [ ] **发 Show HN / 知乎 — 获取第一批用户反馈**
 - [ ] browser-use 真实浏览器扫描（需桌面环境 — Playwright/Chromium）
-- [ ] PyPI token 已失效 — 需重新生成
 - [ ] GitHub Marketplace Release
 
 ## 项目位置

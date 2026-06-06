@@ -63,7 +63,15 @@ class ScanEngine:
             path = Path(target)
             if path.exists() and path.suffix in {".json", ".jsonl", ".ndjson"}:
                 return self._run_offline_file(target, attack_names)
-        return self._run_online(target, attack_names, template)
+        try:
+            return self._run_online(target, attack_names, template)
+        except Exception as e:
+            if target in ("hermes", "hermes-fast"):
+                from agentsec.cli import ERR
+                ERR.print("[yellow]此 target 需要 Hermes Agent（hermes-agent.nousresearch.com）或 Hermes 配置，跳过[/yellow]")
+                ERR.print(f"[dim]{e}[/dim]")
+                return []
+            raise
 
     def _run_online(self, target_spec: str,
                     attack_names: list[str] | None = None,
@@ -187,9 +195,9 @@ class ScanEngine:
         if not trace:
             # Fall back to raw JSON load for generic .json files
             try:
-                data = json.loads(path.read_text())
+                data = json.loads(path.read_text(encoding="utf-8"))
                 trace = data if isinstance(data, list) else data.get("messages", [])
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, UnicodeDecodeError):
                 from agentsec.cli import ERR
                 ERR.print(f"[red]Unable to parse trace file:[/red] {target}")
                 ERR.print("[yellow]Try using one of the supported formats:[/yellow]")

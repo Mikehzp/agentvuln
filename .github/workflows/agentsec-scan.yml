@@ -73,7 +73,7 @@ jobs:
       # ── Run the security scan ───────────────────────────
       # Uses the composite action defined in agentsec/action.yml
       - name: Scan AI agent security
-        uses: ./agentsec
+        uses: ./
         with:
           # ── Scan target ────────────────────────────────
           # 'hermes' = local Hermes agent
@@ -122,7 +122,7 @@ jobs:
 #     runs-on: ubuntu-latest
 #     steps:
 #       - uses: actions/checkout@v4
-#       - uses: ./agentsec
+#       - uses: ./
 #         with:
 #           profile: quick
 #           fail-on: critical
@@ -132,7 +132,7 @@ jobs:
 #     runs-on: ubuntu-latest
 #     steps:
 #       - uses: actions/checkout@v4
-#       - uses: ./agentsec
+#       - uses: ./
 #         with:
 #           profile: daily
 #           fail-on: high
@@ -142,7 +142,7 @@ jobs:
 #     runs-on: ubuntu-latest
 #     steps:
 #       - uses: actions/checkout@v4
-#       - uses: ./agentsec
+#       - uses: ./
 #         with:
 #           profile: full
 #           fail-on: medium
@@ -159,7 +159,7 @@ jobs:
 #     runs-on: ubuntu-latest
 #     steps:
 #       - uses: actions/checkout@v4
-#       - uses: ./agentsec
+#       - uses: ./
 #         with:
 #           target: traces/latest.json
 #           profile: full
@@ -177,12 +177,12 @@ jobs:
 #     runs-on: ubuntu-latest
 #     steps:
 #       - uses: actions/checkout@v4
-#       - uses: ./agentsec
+#       - uses: ./
 #         with:
 #           profile: full
 #           fail-on: medium
 #           dry-run: true          # Preview first
-#       - uses: ./agentsec
+#       - uses: ./
 #         with:
 #           profile: full
 #           fix: true              # Apply fixes

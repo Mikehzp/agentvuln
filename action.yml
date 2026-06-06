@@ -83,7 +83,7 @@ inputs:
   install-from:
     description: >-
       Where to install agentsec from:
-      - 'pypi': pip install agentsec (once published)
+      - 'pypi': pip install agentvuln
       - 'local': uses the agentsec/ directory in the current repo
       - 'source': pip install from the current repo's agentsec/
     required: false
@@ -115,7 +115,7 @@ runs:
       if: inputs.install-from == 'pypi'
       shell: bash
       run: |
-        pip install --quiet agentsec
+        pip install --quiet agentvuln
 
     # ── Set API key if provided ────────────────────────────────
     - name: Configure API key
@@ -137,6 +137,7 @@ runs:
         OUTPUT: ${{ inputs.output-format }}
         FIX: ${{ inputs.fix }}
         DRY_RUN: ${{ inputs.dry-run }}
+        FAIL_ON: ${{ inputs.fail-on }}
       run: |
         ARGS=""
 
@@ -150,13 +151,18 @@ runs:
         # Output format
         [ -n "${OUTPUT}" ] && ARGS="${ARGS} -o report.${OUTPUT}"
 
+        # CI failure threshold
+        [ -n "${FAIL_ON}" ] && ARGS="${ARGS} --fail-on ${FAIL_ON}"
+
         # Fix mode
         [ "${FIX}" = "true" ] && ARGS="${ARGS} --fix"
         [ "${DRY_RUN}" = "true" ] && ARGS="${ARGS} --dry-run"
 
         echo "::group::🔍 Running: agentsec scan ${TARGET}${ARGS}"
+        set +e
         agentsec scan "${TARGET}" ${ARGS}
         EXIT=$?
+        set -e
         echo "::endgroup::"
 
         echo "SCAN_EXIT=$EXIT" >> "$GITHUB_ENV"

@@ -17,6 +17,8 @@
 
 ---
 
+⚠️ PyPI 包名是 agentvuln，CLI 命令是 agentsec。两个名字指向同一个东西。
+
 **agentsec** is a security scanner purpose-built for **AI agents that call tools**. Unlike traditional LLM security scanners that focus on prompt injection in chat, agentsec tests the unique attack surface of tool-using agents: argument injection, privilege escalation, tool chain contamination, MCP protocol abuse, cross-session memory poisoning, and more.
 
 > ⚠️ **Alpha stage** — works, tested, but APIs may change. Contributions welcome.

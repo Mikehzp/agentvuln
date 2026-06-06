@@ -1,6 +1,7 @@
 """Report Generator — outputs scan results as JSON, Markdown, HTML."""
 
 import json
+from html import escape as html_escape
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -120,7 +121,8 @@ class ReportGenerator:
 
     def to_html(self, results: list[AttackResult], target: str) -> str:
         """Generate HTML report."""
-        md = self.to_markdown(results, target)
+        target_html = html_escape(target)
+        target = target_html
 
         html = f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -181,8 +183,12 @@ class ReportGenerator:
 
         html += '<h2>发现详情</h2>'
         for f in self.generate(results, target)['findings']:
-            sev = f['severity']
-            status = f['status']
+            sev = html_escape(f['severity'])
+            status = html_escape(f['status'])
+            f = {
+                key: html_escape(value) if isinstance(value, str) else value
+                for key, value in f.items()
+            }
             html += f"""<div class="finding">
   <h3>{'🔴' if status == 'vulnerable' else '✅'} {f['id']}: {f['name']}</h3>
   <p><span class="badge {sev}">{sev.upper()}</span> <span class="status-{status}">{'漏洞' if status == 'vulnerable' else '通过'}</span></p>

@@ -3,6 +3,19 @@
 import sys
 import json
 from pathlib import Path
+
+
+def _configure_stdio():
+    """Keep Unicode CLI output working on Windows consoles."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
+_configure_stdio()
+
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
@@ -18,11 +31,29 @@ from agentsec import db
 console = Console()
 ERR = Console(stderr=True)
 
+SEVERITY_RANK = {"low": 1, "medium": 2, "high": 3, "critical": 4}
+
+
+def _should_fail(results, fail_on: str | None) -> bool:
+    """Return True when findings meet the configured failure threshold."""
+    threshold = (fail_on or "low").lower()
+    if threshold == "none":
+        return False
+    min_rank = SEVERITY_RANK.get(threshold)
+    if min_rank is None:
+        ERR.print(f"[red]Unknown fail-on threshold: {fail_on}[/red]")
+        ERR.print("Available: none, low, medium, high, critical")
+        return True
+    return any(
+        r.exploited and SEVERITY_RANK.get(str(r.severity).lower(), 1) >= min_rank
+        for r in results
+    )
+
 
 def cmd_scan(target: str, attacks: str | None = None, output: str | None = None,
              fix: bool = False, dry_run: bool = False, profile: str | None = None,
              custom_attacks: str | None = None, template: str | None = None,
-             list_templates: bool = False):
+             list_templates: bool = False, fail_on: str | None = "low"):
     """Run security scan against an agent target (online or offline)."""
 
     # Handle --list-templates
@@ -183,13 +214,28 @@ def cmd_scan(target: str, attacks: str | None = None, output: str | None = None,
         path = gen.save(results, target, output)
         console.print(f"[bold]📄 Report saved:[/bold] {path}")
 
-    return 1 if failed > 0 else 0
+    return 1 if _should_fail(results, fail_on) else 0
 
-def cmd_list_sessions(db_path: str | None = None):
+HERMES_REQUIRED_MESSAGE = "此功能需要 Hermes Agent（hermes-agent.nousresearch.com），跳过"
+
+
+def _resolve_hermes_db(db_path: str | None = None,
+                       hermes_home: str | None = None) -> Path | None:
+    """Resolve Hermes state.db only when the user explicitly opts into Hermes."""
+    if db_path:
+        return Path(db_path)
+    if hermes_home:
+        return Path(hermes_home) / "state.db"
+    console.print(f"[yellow]{HERMES_REQUIRED_MESSAGE}[/yellow]")
+    return None
+
+
+def cmd_list_sessions(db_path: str | None = None,
+                      hermes_home: str | None = None):
     """List recent Hermes sessions from state.db."""
-    if not db_path:
-        db_path = str(Path.home() / ".hermes" / "state.db")
-    db = Path(db_path)
+    db = _resolve_hermes_db(db_path, hermes_home)
+    if db is None:
+        return 0
     if not db.exists():
         ERR.print(f"[red]Session DB not found:[/red] {db}")
         return 1
@@ -230,11 +276,12 @@ def cmd_list_sessions(db_path: str | None = None):
 
 def cmd_scan_session(session_id: str,
                      db_path: str | None = None,
+                     hermes_home: str | None = None,
                      output: str | None = None):
     """Scan a specific Hermes session's trace for vulnerabilities."""
-    if not db_path:
-        db_path = str(Path.home() / ".hermes" / "state.db")
-    db = Path(db_path)
+    db = _resolve_hermes_db(db_path, hermes_home)
+    if db is None:
+        return 0
     if not db.exists():
         ERR.print(f"[red]Session DB not found:[/red] {db}")
         return 1
@@ -418,15 +465,20 @@ def main():
                              "codex-cli, openai-functions, mcp-agent, or path to custom prompt file")
     p_scan.add_argument("--list-templates", action="store_true",
                         help="List available agent simulation templates")
+    p_scan.add_argument("--fail-on", choices=["none", "low", "medium", "high", "critical"],
+                        default="low",
+                        help="Exit with code 1 only when findings meet this severity threshold")
 
     # list-sessions
-    p_ls = sub.add_parser("list-sessions", help="List recent Hermes sessions")
+    p_ls = sub.add_parser("list-sessions", help="[Hermes only] List recent Hermes sessions")
     p_ls.add_argument("--db", help="Path to Hermes state.db")
+    p_ls.add_argument("--hermes-home", help="Path to Hermes home directory containing state.db")
 
     # scan-session
-    p_ss = sub.add_parser("scan-session", help="Scan a specific Hermes session by ID")
+    p_ss = sub.add_parser("scan-session", help="[Hermes only] Scan a specific Hermes session by ID")
     p_ss.add_argument("session_id", help="Hermes session ID")
     p_ss.add_argument("--db", help="Path to Hermes state.db")
+    p_ss.add_argument("--hermes-home", help="Path to Hermes home directory containing state.db")
     p_ss.add_argument("--output", "-o", help="Save report to file")
 
     # shell
@@ -464,7 +516,8 @@ def main():
 
     if args.command == "scan":
         sys.exit(cmd_scan(args.target, args.attacks, args.output, args.fix, args.dry_run,
-                          args.profile, args.custom_attacks, args.template, args.list_templates))
+                          args.profile, args.custom_attacks, args.template,
+                          args.list_templates, args.fail_on))
     elif args.command == "shell":
         from agentsec.shell import cmd_shell
         sys.exit(cmd_shell(args.target, args.system))
@@ -472,9 +525,9 @@ def main():
         from agentsec.watch import cmd_watch
         sys.exit(cmd_watch(args.target, args.every, args.profile))
     elif args.command == "list-sessions":
-        sys.exit(cmd_list_sessions(args.db))
+        sys.exit(cmd_list_sessions(args.db, args.hermes_home))
     elif args.command == "scan-session":
-        sys.exit(cmd_scan_session(args.session_id, args.db, args.output))
+        sys.exit(cmd_scan_session(args.session_id, args.db, args.hermes_home, args.output))
     elif args.command == "self-test":
         from agentsec.selftest import run_all
         sys.exit(0 if run_all() else 1)

@@ -87,8 +87,15 @@ CREATE INDEX IF NOT EXISTS idx_compatibility_target ON compatibility(target);
 
 # ─── Connection helper ──────────────────────────────────────────
 
-def get_conn(db_path: Optional[Path] = None) -> sqlite3.Connection:
+def get_conn(db_path: Optional[Path] = None, read_only: bool = False) -> sqlite3.Connection:
     path = db_path or DB_PATH
+    if read_only:
+        uri = f"{path.resolve().as_uri()}?mode=ro&immutable=1"
+        conn = sqlite3.connect(uri, uri=True)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys=ON")
+        return conn
+
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(path))
     conn.row_factory = sqlite3.Row
@@ -160,7 +167,7 @@ def save_scan_run(
 
 def get_recent_scan_runs(limit: int = 10) -> list[dict]:
     """Get most recent scan runs."""
-    conn = get_conn()
+    conn = get_conn(read_only=True)
     try:
         rows = conn.execute("""
             SELECT id, timestamp, target, provider, model,
@@ -176,7 +183,7 @@ def get_recent_scan_runs(limit: int = 10) -> list[dict]:
 
 def get_scan_run(scan_run_id: int) -> Optional[dict]:
     """Get a scan run with its attack results."""
-    conn = get_conn()
+    conn = get_conn(read_only=True)
     try:
         run = conn.execute("SELECT * FROM scan_runs WHERE id = ?", (scan_run_id,)).fetchone()
         if not run:
@@ -191,7 +198,7 @@ def get_scan_run(scan_run_id: int) -> Optional[dict]:
 
 def get_exploited_results(target: str = "", limit: int = 20) -> list[dict]:
     """Get most recent exploited (vulnerable) findings."""
-    conn = get_conn()
+    conn = get_conn(read_only=True)
     try:
         if target:
             rows = conn.execute("""
@@ -252,7 +259,7 @@ def save_template(
 
 def list_templates() -> list[dict]:
     """List all stored attack templates."""
-    conn = get_conn()
+    conn = get_conn(read_only=True)
     try:
         rows = conn.execute("""
             SELECT id, name, severity, description, risk, created_at, updated_at
@@ -293,7 +300,7 @@ def save_compatibility(entry: dict):
 
 def get_compatibility(target: str = "") -> list[dict]:
     """Get compatibility matrix entries."""
-    conn = get_conn()
+    conn = get_conn(read_only=True)
     try:
         if target:
             rows = conn.execute("""
@@ -312,7 +319,7 @@ def get_compatibility(target: str = "") -> list[dict]:
 
 def get_summary(target: str = "") -> dict:
     """Get aggregated stats across all scan runs."""
-    conn = get_conn()
+    conn = get_conn(read_only=True)
     try:
         if target:
             run = conn.execute("""
@@ -372,4 +379,5 @@ def get_summary(target: str = "") -> dict:
 
 # ─── Init on import ─────────────────────────────────────────────
 
-init_db()
+# Database initialization is intentionally lazy so read-only commands such as
+# `agentsec --help` and `agentsec --version` do not fail on database permissions.
