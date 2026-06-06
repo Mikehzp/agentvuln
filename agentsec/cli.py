@@ -172,10 +172,21 @@ def cmd_scan(target: str, attacks: str | None = None, output: str | None = None,
         custom = load_custom_attacks(custom_attacks)
         if custom:
             console.print(f"[green]✅ Loaded {len(custom)} custom attack(s) from {custom_attacks}[/green]")
-            # Rebuild engine with custom attacks included
-            engine = ScanEngine()
+            engine.attacks.update(custom)
         else:
             console.print(f"[yellow]⚠️ No valid YAML attacks found in {custom_attacks}[/yellow]")
+
+    # Also load from installed template marketplace.
+    try:
+        from agentsec.template_market import INSTALLED_DIR
+        if INSTALLED_DIR.exists():
+            from agentsec.yaml_loader import load_custom_attacks
+            installed = load_custom_attacks(str(INSTALLED_DIR))
+            if installed:
+                engine.attacks.update(installed)
+                console.print(f"[green]✅ Loaded {len(installed)} installed template(s)[/green]")
+    except Exception as e:
+        console.print(f"[dim]⚠️ Installed templates skipped: {e}[/dim]")
 
     results = engine.run(target, attack_names, template=template, show_progress=not json_output)
 
@@ -567,6 +578,35 @@ def main():
     # benchmark
     p_bench = sub.add_parser("benchmark", help="Run deterministic detection benchmark cases")
 
+    # template
+    p_tpl = sub.add_parser("template", help="Manage community attack templates")
+    tpl_sub = p_tpl.add_subparsers(dest="template_command", help="Template sub-commands")
+
+    p_tl = tpl_sub.add_parser("list", help="List installed templates")
+    p_tl.add_argument("--registry", "-r", action="store_true",
+                      help="List registry (remote) instead of local")
+
+    p_ti = tpl_sub.add_parser("install", help="Install a template from the registry")
+    p_ti.add_argument("name", help="Template name from registry")
+
+    p_tc = tpl_sub.add_parser("create", help="Scaffold a new attack template")
+    p_tc.add_argument("name", help="Template name")
+    p_tc.add_argument("--dir", "-d", default=".", help="Output directory (default: current)")
+
+    p_ts = tpl_sub.add_parser("search", help="Search templates in registry")
+    p_ts.add_argument("query", help="Search keyword")
+
+    p_ti2 = tpl_sub.add_parser("info", help="Show template details")
+    p_ti2.add_argument("name", help="Template name")
+
+    p_tr = tpl_sub.add_parser("remove", help="Remove an installed template")
+    p_tr.add_argument("name", help="Template name")
+
+    p_tv = tpl_sub.add_parser("validate", help="Validate a YAML template file")
+    p_tv.add_argument("path", help="Path to YAML template file or directory")
+
+    tpl_sub.add_parser("update", help="Force-refresh registry cache")
+
     # db
     p_db = sub.add_parser("db", help="Query the local security scan database")
     p_db.add_argument("subcommand", nargs="?", default="summary",
@@ -604,6 +644,40 @@ def main():
         summary = run_benchmark()
         console.print(format_summary(summary))
         sys.exit(0 if summary.failed == 0 else 1)
+    elif args.command == "template":
+        from agentsec.template_market import (
+            fetch_registry,
+            install_template,
+            list_registry,
+            list_templates,
+            remove_template,
+            scaffold_template,
+            search_templates,
+            show_template,
+            validate_template,
+        )
+        if args.template_command == "list":
+            if args.registry:
+                list_registry()
+            else:
+                list_templates()
+        elif args.template_command == "install":
+            install_template(args.name)
+        elif args.template_command == "create":
+            scaffold_template(args.name, args.dir)
+        elif args.template_command == "search":
+            search_templates(args.query)
+        elif args.template_command == "info":
+            show_template(args.name)
+        elif args.template_command == "remove":
+            remove_template(args.name)
+        elif args.template_command == "validate":
+            validate_template(args.path)
+        elif args.template_command == "update":
+            fetch_registry(force=True)
+        else:
+            p_tpl.print_help()
+        sys.exit(0)
     elif args.command == "db":
         sys.exit(cmd_db(args.subcommand, args.target, args.limit))
     else:

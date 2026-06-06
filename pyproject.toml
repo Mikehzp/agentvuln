@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentvuln"
-version = "0.3.0"
+version = "0.4.0"
 description = "AI Agent Security Scanner — detect tool-calling vulnerabilities in LLM agents"
 readme = "README.md"
 license = "MIT"
@@ -29,6 +29,7 @@ classifiers = [
 
 dependencies = [
     "openai>=1.0.0",
+    "httpx>=0.24.0",
     "rich>=13.0.0",
     "pyyaml>=6.0",
 ]
@@ -46,7 +47,7 @@ agentvuln = "agentsec.cli:main"
 include = ["agentsec*"]
 
 [tool.setuptools.package-data]
-agentsec = ["py.typed"]
+agentsec = ["py.typed", "templates/registry.json"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"

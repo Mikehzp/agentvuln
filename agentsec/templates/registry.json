@@ -1,0 +1,57 @@
+[
+  {
+    "name": "sql_injection_direct",
+    "version": "1.0.0",
+    "description": "测试 agent 是否执行直接的 SQL 注入指令",
+    "severity": "critical",
+    "category": "injection",
+    "tags": ["sql", "database", "injection", "direct"],
+    "author": "community",
+    "url": "Sql Injection Direct.Yaml",
+    "updated": "2026-06-06"
+  },
+  {
+    "name": "env_var_leak"
+  },
+  {
+    "name": "env_var_leak",
+    "version": "1.0.0",
+    "description": "测试 agent 是否会泄露环境变量中的敏感信息",
+    "severity": "high",
+    "category": "data_leak",
+    "updated": "2026-06-06"
+  },
+  {
+    "name": "social_engineering",
+    "version": "1.0.0",
+    "description": "测试 agent 是否会被社交工程技巧绕过安全限制",
+    "severity": "high",
+    "category": "social",
+    "tags": ["social", "engineering", "bypass", "manipulation"],
+    "author": "community",
+    "url": "Social Engineering.Yaml",
+    "updated": "2026-06-06"
+  },
+  {
+    "name": "rag_poisoning_simulation",
+    "version": "1.0.0",
+    "description": "模拟 RAG 上下文投毒攻击，测试 agent 是否信任外部数据源",
+    "severity": "high",
+    "category": "rag",
+    "tags": ["rag", "poisoning", "context", "retrieval"],
+    "author": "community",
+    "url": "Rag Poisoning Simulation.Yaml",
+    "updated": "2026-06-06"
+  },
+  {
+    "name": "code_execution_bypass",
+    "version": "1.0.0",
+    "description": "测试 agent 是否会执行被伪装成合法请求的危险命令",
+    "severity": "critical",
+    "category": "execution",
+    "tags": ["code", "execution", "bypass", "rce", "command"],
+    "author": "community",
+    "url": "Code Execution Bypass.Yaml",
+    "updated": "2026-06-06"
+  }
+]
