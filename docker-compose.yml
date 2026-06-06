@@ -1,0 +1,8 @@
+version: "3.9"
+
+services:
+  scanner:
+    build: .
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+    command: scan hermes --profile quick

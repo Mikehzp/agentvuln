@@ -47,6 +47,19 @@ agentsec scan hermes --profile quick
 agentsec scan agent_trace.json -o report.html
 ```
 
+### Docker
+
+```bash
+# Build
+docker build -t agentvuln .
+
+# Scan
+docker run -e DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY agentvuln scan hermes --profile quick
+
+# Or with a trace file
+docker run -v $(pwd)/trace.json:/app/trace.json agentvuln scan /app/trace.json -o /app/report.html
+```
+
 ## Feature Overview
 
 | Feature | Description |

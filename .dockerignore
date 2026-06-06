@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.py[cod]
+.git/
+data/
+report-*.html
+.coverage
+.gitignore
+BUSINESS_ROADMAP.md
+PROGRESS.md
+COMPARISON.md
