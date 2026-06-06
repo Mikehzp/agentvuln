@@ -2,11 +2,20 @@
 
 import sys
 import json
+import time
 from pathlib import Path
 from typing import Optional, Callable
 
 from agentsec.registry import list_attacks
 from agentsec.attacks.base import AttackResult
+
+
+class ScanResults(list):
+    """List-compatible scan results with metadata."""
+
+    def __init__(self, results=None, duration_seconds: float = 0.0):
+        super().__init__(results or [])
+        self.duration_seconds = duration_seconds
 
 
 class TraceCollector:
@@ -40,7 +49,7 @@ class ScanEngine:
         self.attacks = list_attacks()
 
     def run(self, target: str, attack_names: list[str] | None = None,
-            template: str | None = None) -> list[AttackResult]:
+            template: str | None = None, show_progress: bool = True) -> list[AttackResult]:
         """Run attacks. Auto-detects mode based on target format.
 
         Online targets (any spec that resolve_target understands):
@@ -54,28 +63,33 @@ class ScanEngine:
         Offline targets:
           - 'trace.json' or 'path/to/trace.json' → parse JSON trace file
         """
+        start_time = time.monotonic()
         # Check if target is a file-based trace (offline)
         _OFFLINE_EXTS = (".json", ".jsonl", ".ndjson", ".claude.json", ".ls.json", ".trace.json")
         if target.endswith(_OFFLINE_EXTS):
-            return self._run_offline_file(target, attack_names)
+            results = self._run_offline_file(target, attack_names, show_progress=show_progress)
+            return ScanResults(results, time.monotonic() - start_time)
         # Also check if it looks like a file path (contains a dot + extension)
         if "/" in target or "\\" in target:
             path = Path(target)
             if path.exists() and path.suffix in {".json", ".jsonl", ".ndjson"}:
-                return self._run_offline_file(target, attack_names)
+                results = self._run_offline_file(target, attack_names, show_progress=show_progress)
+                return ScanResults(results, time.monotonic() - start_time)
         try:
-            return self._run_online(target, attack_names, template)
+            results = self._run_online(target, attack_names, template, show_progress=show_progress)
+            return ScanResults(results, time.monotonic() - start_time)
         except Exception as e:
             if target in ("hermes", "hermes-fast"):
                 from agentsec.cli import ERR
                 ERR.print("[yellow]此 target 需要 Hermes Agent（hermes-agent.nousresearch.com）或 Hermes 配置，跳过[/yellow]")
                 ERR.print(f"[dim]{e}[/dim]")
-                return []
+                return ScanResults([], time.monotonic() - start_time)
             raise
 
     def _run_online(self, target_spec: str,
                     attack_names: list[str] | None = None,
-                    template: str | None = None) -> list[AttackResult]:
+                    template: str | None = None,
+                    show_progress: bool = True) -> list[AttackResult]:
         """Run attacks against a live agent."""
         from agentsec.target import resolve_target
         from agentsec.judge import DetectionPipeline
@@ -86,7 +100,7 @@ class ScanEngine:
         pipeline = DetectionPipeline(use_llm_judge=True)
 
         try:
-            for name, cls in attacks_to_run.items():
+            for name, cls in self._progress(attacks_to_run.items(), show_progress):
                 instance = cls()
                 collector = TraceCollector()
 
@@ -126,6 +140,7 @@ class ScanEngine:
 
                         result.exploited = verdict.exploited
                         result.description = verdict.reason
+                        result.recommendation = self._recommendation_for(name, verdict.exploited)
                         result.trace = [{"layer": verdict.layer,
                                          "confidence": verdict.confidence,
                                          "evidence": verdict.evidence}]
@@ -150,12 +165,13 @@ class ScanEngine:
         return results
 
     def run_offline(self, trace: list[dict],
-                    attack_names: list[str] | None = None) -> list[AttackResult]:
+                    attack_names: list[str] | None = None,
+                    show_progress: bool = True) -> list[AttackResult]:
         """Run all attacks against an offline trace."""
         results = []
         attacks_to_run = self._select_attacks(attack_names)
 
-        for name, cls in attacks_to_run.items():
+        for name, cls in self._progress(attacks_to_run.items(), show_progress):
             try:
                 instance = cls()
                 if hasattr(instance, "run_offline"):
@@ -163,6 +179,7 @@ class ScanEngine:
                 else:
                     result = AttackResult(name=name, severity="medium", exploited=False,
                                           description="此攻击不支持离线模式")
+                result.recommendation = self._recommendation_for(name, result.exploited)
                 results.append(result)
             except Exception as e:
                 results.append(AttackResult(name=name, severity="low", exploited=False,
@@ -176,7 +193,8 @@ class ScanEngine:
         return self.run_offline(trace, attack_names)
 
     def _run_offline_file(self, target: str,
-                          attack_names: list[str] | None = None) -> list[AttackResult]:
+                          attack_names: list[str] | None = None,
+                          show_progress: bool = True) -> list[AttackResult]:
         """Parse a trace file and run offline analysis.
 
         Uses trace_adapters to auto-detect and load various trace formats.
@@ -211,13 +229,32 @@ class ScanEngine:
             ERR.print(f"[yellow]No messages found in:[/yellow] {target}")
             return []
 
-        return self.run_offline(trace, attack_names)
+        return self.run_offline(trace, attack_names, show_progress=show_progress)
 
     def _select_attacks(self, names: list[str] | None) -> dict:
         """Filter attacks by name. None = all."""
         if not names:
             return dict(self.attacks)
         return {n: self.attacks[n] for n in names if n in self.attacks}
+
+    def _progress(self, items, show_progress: bool):
+        items = list(items)
+        if not show_progress:
+            return items
+        try:
+            from tqdm import tqdm
+            return tqdm(items, desc="Scanning")
+        except Exception:
+            return items
+
+    def _recommendation_for(self, attack_name: str, exploited: bool) -> str:
+        if not exploited:
+            return ""
+        try:
+            from agentsec.judge import ToolCallAnalyzer
+            return ToolCallAnalyzer.fix_advice(attack_name)
+        except Exception:
+            return ""
 
 
 def load_trace_from_session(session_id: str,

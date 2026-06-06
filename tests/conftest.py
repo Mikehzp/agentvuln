@@ -46,10 +46,10 @@ def tmp_trace_file(tmp_path):
 class MockScanEngine:
     results: list[AttackResult]
 
-    def run(self, target, attack_names=None, template=None):
+    def run(self, target, attack_names=None, template=None, show_progress=True):
         return list(self.results)
 
-    def run_offline(self, trace, attack_names=None):
+    def run_offline(self, trace, attack_names=None, show_progress=True):
         return list(self.results)
 
 

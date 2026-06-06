@@ -18,3 +18,4 @@ class AttackResult:
     trace: list[dict] = field(default_factory=list)
     remediation: str = ""
     risk: str = ""
+    recommendation: str = ""

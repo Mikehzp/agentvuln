@@ -48,6 +48,7 @@ class ReportGenerator:
                     "prompt": r.prompt[:200] if r.prompt else "",
                     "risk": r.risk,
                     "remediation": r.remediation,
+                    "recommendation": getattr(r, "recommendation", ""),
                     "tool_calls_involved": len(r.tool_calls),
                 }
                 for i, r in enumerate(results)
@@ -110,6 +111,9 @@ class ReportGenerator:
                 for line in f['remediation'].split('\n'):
                     if line.strip():
                         lines.append(f"  - {line.strip()}")
+                lines.append("")
+            if f.get('recommendation'):
+                lines.append(f"**Recommendation:** {f['recommendation']}  ")
                 lines.append("")
             if f['prompt']:
                 lines.append(f"**攻击 Payload:** `{f['prompt']}`  ")
@@ -203,6 +207,8 @@ class ReportGenerator:
                     if line.strip():
                         html += f"<li>{line.strip()}</li>"
                 html += "</ul>"
+            if f.get('recommendation'):
+                html += f"<p><strong>Recommendation:</strong> {f['recommendation']}</p>"
             if f['prompt']:
                 html += f"<p><strong>攻击 Payload:</strong> <code>{f['prompt'][:100]}</code></p>"
             html += "</div>"

@@ -50,11 +50,67 @@ def _should_fail(results, fail_on: str | None) -> bool:
     )
 
 
+def _format_duration(seconds: float) -> str:
+    seconds = max(0, int(seconds))
+    minutes, secs = divmod(seconds, 60)
+    return f"{minutes}m {secs}s" if minutes else f"{secs}s"
+
+
+def _scan_json_payload(target: str, results, duration_seconds: float) -> dict:
+    return {
+        "target": target,
+        "duration_seconds": duration_seconds,
+        "summary": {
+            "total": len(results),
+            "passed": sum(1 for r in results if not r.exploited),
+            "vulnerable": sum(1 for r in results if r.exploited),
+        },
+        "findings": [
+            {
+                "name": r.name,
+                "severity": r.severity,
+                "exploited": r.exploited,
+                "reason": r.description,
+                "evidence": (
+                    r.trace[0].get("evidence", [])
+                    if r.trace and isinstance(r.trace[0], dict)
+                    else []
+                ),
+                "recommendation": getattr(r, "recommendation", ""),
+            }
+            for r in results
+        ],
+    }
+
+
+def _resolve_attack_names(profile: str | None, attacks: str | None):
+    if profile:
+        from agentsec.profiles import resolve_profile
+        return resolve_profile(profile)
+    if attacks:
+        return [a.strip() for a in attacks.split(",")]
+    return None
+
+
+def _cmd_scan_json(target: str, attacks: str | None = None,
+                   profile: str | None = None, template: str | None = None,
+                   fail_on: str | None = "low") -> int:
+    engine = ScanEngine()
+    attack_names = _resolve_attack_names(profile, attacks)
+    results = engine.run(target, attack_names, template=template, show_progress=False)
+    duration_seconds = getattr(results, "duration_seconds", 0.0)
+    print(json.dumps(_scan_json_payload(target, results, duration_seconds), ensure_ascii=False, indent=2))
+    return 1 if _should_fail(results, fail_on) else 0
+
+
 def cmd_scan(target: str, attacks: str | None = None, output: str | None = None,
              fix: bool = False, dry_run: bool = False, profile: str | None = None,
              custom_attacks: str | None = None, template: str | None = None,
-             list_templates: bool = False, fail_on: str | None = "low"):
+             list_templates: bool = False, fail_on: str | None = "low",
+             json_output: bool = False):
     """Run security scan against an agent target (online or offline)."""
+    if json_output:
+        return _cmd_scan_json(target, attacks, profile, template, fail_on)
 
     # Handle --list-templates
     if list_templates:
@@ -121,7 +177,7 @@ def cmd_scan(target: str, attacks: str | None = None, output: str | None = None,
         else:
             console.print(f"[yellow]⚠️ No valid YAML attacks found in {custom_attacks}[/yellow]")
 
-    results = engine.run(target, attack_names, template=template)
+    results = engine.run(target, attack_names, template=template, show_progress=not json_output)
 
     # Auto-save results to database
     try:
@@ -138,7 +194,7 @@ def cmd_scan(target: str, attacks: str | None = None, output: str | None = None,
             provider=target_info.get("provider", ""),
             model=target_info.get("model", ""),
             template=template or "",
-            duration_seconds=0,  # TODO: track actual duration
+            duration_seconds=getattr(results, "duration_seconds", 0.0),
         )
     except Exception as e:
         console.print(f"[dim]⚠ DB save skipped: {e}[/dim]")
@@ -146,8 +202,13 @@ def cmd_scan(target: str, attacks: str | None = None, output: str | None = None,
     # Summary
     passed = sum(1 for r in results if not r.exploited)
     failed = sum(1 for r in results if r.exploited)
+    duration_seconds = getattr(results, "duration_seconds", 0.0)
+    if json_output:
+        print(json.dumps(_scan_json_payload(target, results, duration_seconds), ensure_ascii=False, indent=2))
+        return 1 if _should_fail(results, fail_on) else 0
     console.print(f"[bold]Results:[/bold] {len(results)} tests — "
                   f"[green]{passed} passed[/green], [red]{failed} vulnerable[/red]")
+    console.print(f"[bold]Duration:[/bold] {_format_duration(duration_seconds)}")
     console.print()
 
     # Detail
@@ -173,6 +234,8 @@ def cmd_scan(target: str, attacks: str | None = None, output: str | None = None,
         console.print(f"  {tag} {sev_tag}  {r.name}{pipeline_info}")
         if r.exploited and not pipeline_info:
             console.print(f"       [dim]{escape(r.description[:120])}[/dim]")
+        if r.exploited and getattr(r, "recommendation", ""):
+            console.print(f"       [cyan]Recommendation:[/cyan] {escape(r.recommendation[:180])}")
         console.print()
 
     # Auto-fix
@@ -468,6 +531,8 @@ def main():
     p_scan.add_argument("--fail-on", choices=["none", "low", "medium", "high", "critical"],
                         default="low",
                         help="Exit with code 1 only when findings meet this severity threshold")
+    p_scan.add_argument("--json", action="store_true",
+                        help="Output results as JSON (machine-readable)")
 
     # list-sessions
     p_ls = sub.add_parser("list-sessions", help="[Hermes only] List recent Hermes sessions")
@@ -520,7 +585,7 @@ def main():
     if args.command == "scan":
         sys.exit(cmd_scan(args.target, args.attacks, args.output, args.fix, args.dry_run,
                           args.profile, args.custom_attacks, args.template,
-                          args.list_templates, args.fail_on))
+                          args.list_templates, args.fail_on, args.json))
     elif args.command == "shell":
         from agentsec.shell import cmd_shell
         sys.exit(cmd_shell(args.target, args.system))
