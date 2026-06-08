@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
 from mcp.server import FastMCP
 
-from agentsec.engine import ScanEngine
+from agentsec.engine import ScanEngine, ScanResults
 from agentsec.registry import list_attacks as _list_registered_attacks
 
 server = FastMCP(
@@ -71,6 +73,8 @@ def scan_agent(
     Supports online scanning against any OpenAI-compatible API.
     API keys must be set in environment variables (DEEPSEEK_API_KEY, OPENAI_API_KEY, etc.).
 
+    Full scans (18 attacks) run attacks in parallel (~2 min vs ~8 min sequential).
+
     Args:
         target: Target specification (e.g. 'deepseek:deepseek-v4-flash', 'openai:gpt-4o',
                 'hermes-fast', 'api:https://url/v1:model')
@@ -81,7 +85,7 @@ def scan_agent(
     Returns:
         JSON string with scan results including per-attack findings and summary.
     """
-    engine = ScanEngine()
+    start_time = time.monotonic()
 
     # Resolve attack names from profile or explicit list
     attack_names: list[str] | None = None
@@ -91,8 +95,35 @@ def scan_agent(
         from agentsec.profiles import resolve_profile
         attack_names = resolve_profile(profile)
 
-    results = engine.run(target, attack_names, template=template, show_progress=False)
-    duration = getattr(results, "duration_seconds", 0.0)
+    # Small profiles: single-threaded (less overhead)
+    if attack_names is not None and len(attack_names) <= 8:
+        engine = ScanEngine()
+        results = engine.run(target, attack_names, template=template, show_progress=False)
+
+    # Full scan: parallel chunks, each with own engine + target
+    else:
+        all_attacks = list(_list_registered_attacks().keys())
+        names_to_run = attack_names if attack_names is not None else all_attacks
+
+        # Split into 4 chunks for ~4x speedup
+        chunk_size = max(1, len(names_to_run) // 4)
+        chunks = [names_to_run[i:i + chunk_size] for i in range(0, len(names_to_run), chunk_size)]
+
+        def _run_chunk(chunk: list[str]) -> list:
+            eng = ScanEngine()
+            eng_results = eng.run(target, chunk, template=template, show_progress=False)
+            return list(eng_results)
+
+        with ThreadPoolExecutor(max_workers=len(chunks)) as pool:
+            futures = [pool.submit(_run_chunk, chunk) for chunk in chunks]
+            all_results: list = []
+            for f in as_completed(futures):
+                all_results.extend(f.result())
+
+        duration = time.monotonic() - start_time
+        results = ScanResults(all_results, duration)
+
+    duration = getattr(results, "duration_seconds", time.monotonic() - start_time)
 
     summary = {
         "target": target,
