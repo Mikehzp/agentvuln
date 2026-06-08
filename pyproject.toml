@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentvuln"
-version = "0.4.0"
+version = "0.4.1"
 description = "AI Agent Security Scanner — detect tool-calling vulnerabilities in LLM agents"
 readme = "README.md"
 license = "MIT"
