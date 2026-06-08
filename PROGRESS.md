@@ -1,4 +1,4 @@
-# agentvuln 开发进度 — 2026-06-06
+# agentvuln 开发进度 — 2026-06-08
 
 ## 已完成
 
@@ -43,67 +43,47 @@
 - [x] `compatibility-matrix.json` — DeepSeek 验证通过 (5/5 quick)
 - [x] self-test 7/7 持续通过
 
-### v0.3.0 开发者产品化 (2026-06-03)
-
-- [x] 修复 pyproject.toml — setuptools License 兼容性
-- [x] 重写 README.md — 中英文完整文档 + 攻击表 + 架构图 + 竞品对比 + badges
-- [x] PyPI 发布: `agentvuln` v0.2.0 → v0.2.1
-- [x] CLI 别名: `agentsec` + `agentvuln` 均可
-- [x] 独立 GitHub 仓库: [Mikehzp/agentvuln](https://github.com/Mikehzp/agentvuln)
-- [x] GitHub credentials: token 认证配置完毕
-- [x] DNS 绕过: /etc/hosts 配了 github.com 直连 IP
-- [x] 全量扫描报告: 18 attacks, 1 vuln found (system_prompt_leak HIGH)
-- [x] 每日下载统计 cron job: 每天9点
-
-### v0.2.2 修复 — 2026-06-04
+### v0.2.2 修复 (2026-06-04)
 
 - [x] 修复 DirectAPITarget 的 function 字段格式（dict→name string）
 - [x] 修复 8 处 `'dict' object has no attribute 'lower'` / `sequence item 0: expected str instance` 执行错误
 - [x] 增加 LLM Judge JSON 解析的 regex fallback（解决 JSON parse error）
 - [x] 添加 `_tool_name()` 防御性提取函数，兼容新旧两种 function 格式
-- [x] 修复文件: direct_target.py, target.py, judge.py, detector.py, shell.py
-- [x] 攻击文件: multi_agent_collusion.py, tool_chain.py, tool_output_manipulation.py
 
-### v0.2.2 实战验证 — 2026-06-04
+### v0.2.2 实战验证 (2026-06-04)
 
 - [x] 3种真实 agent 扫描：Hermes（3漏洞）、browser-use（3漏洞）、OpenHands（1漏洞）
-- [x] COMPARISON.md — 真实架构安全对比报告（仅含真实安装/源码级 agent）
-- [x] 发现: SQL注入是所有agent通病, system_prompt_leak 靠显式安全指令可防
+- [x] COMPARISON.md — 真实架构安全对比报告
 - [x] browser-use 泄露 SSH 私钥（最严重发现）
-- [x] OpenHands SDK 依赖修复 + 系统 venv 安装成功
-- [x] 175 tests total, 7 real vulnerabilities
-
-### v0.2.2 新增 — OpenHands SDK 真实对话扫描 (2026-06-04)
-
-- [x] OpenHands SDK v1.21 `LocalConversation` API 兼容性验证
-- [x] `scripts/scan_openhands_sdk.py` — OpenHands SDK CodeActAgent 真实对话扫描脚本
-- [x] `scripts/scan_browseruse_real.py` — browser-use 真实 agent 扫描脚本（需桌面环境）
-- [x] **重磅发现: OpenHands SDK (4/4 vuln) ≠ CLI (0/4 vuln)** — 安全层在 CLI 层，不在 agent 层
-- [x] COMPARISON.md 更新: OpenHands SDK 4/4 漏洞结果 + CLI vs SDK 对比表格
+- [x] OpenHands SDK (4/4 vuln) ≠ CLI (0/4 vuln) 发现
 
 ### v0.3.0 产品化收尾 (2026-06-06) — Codex 合作轮
 
-- [x] Hermes 解耦: `--hermes-home` 参数, friendly skip, help 标 `[Hermes only]`
-- [x] engine.py 友好提示: target=hermes 失败时不崩
-- [x] 新增 tests/: conftest.py + 6 个测试文件, 共 20 测试 (384 行)
-- [x] README: 首行加 PyPI 包名说明
-- [x] `--fail-on` CI 阈值: `_should_fail()` + action.yml 集成
-- [x] UTF-8 兼容: `_configure_stdio()` Windows 控制台
-- [x] db.py read-only 模式: 查询走 `mode=ro`
-- [x] action.yml 包名修复: `agentsec` → `agentvuln`
-- [x] HTML escape: `html.escape()` 防 XSS
-- [x] 新增 tests/conftest.py: 共享 fixtures
-- [x] 抽出 `shell.parse_shell_command()` 可测性改进
-- [x] 加 LICENSE (MIT)
-- [x] 补 .gitignore: `data/`, `report-*.html`
-- [x] 版本 bump: v0.2.2 → v0.3.0
-- [x] 加 CI test workflow: `.github/workflows/test.yml`
-- [x] PyPI token 已修复 — v0.2.2 发布成功
+- [x] Hermes 解耦: `--hermes-home` 参数, friendly skip
+- [x] 新增 tests/: 20 测试 (384 行), 累计 51 测试
+- [x] `--fail-on` CI 阈值, action.yml 集成
+- [x] UTF-8 兼容, HTML escape 防 XSS
+- [x] B1 Docker 一键扫描 (multi-stage, 240MB)
+- [x] B2 交互打磨 (进度条/--json/根因建议/耗时追踪)
+- [x] B3 模板市场 (template search/install + registry.json)
+- [x] PyPI 发布 v0.3.0
+
+### v0.4.1 MCP Server — Agent-to-Agent 分发 (2026-06-08)
+
+- [x] `agentsec/mcp_server.py` — FastMCP server, 6 tools, stdio transport
+- [x] `agentsec-mcp` / `agentvuln-mcp` CLI entry points
+- [x] 工具: scan_agent / scan_trace / list_attacks / list_profiles / list_templates / get_version
+- [x] 本地验证: 51 测试通过 + 5 项 MCP 协议测试
+- [x] Hermes config 集成 `mcp_servers.agentvuln`
+- [x] 已推送 GitHub
 
 ## 待办
 
-- [ ] **发 Show HN / 知乎 — 获取第一批用户反馈**
-- [ ] browser-use 真实浏览器扫描（需桌面环境 — Playwright/Chromium）
+- [ ] 重启 Hermes 加载 MCP server
+- [ ] PyPI 发布 v0.4.1
+- [ ] 发布到 MCP 目录 (modelcontextprotocol/servers)
+- [ ] Show HN / 知乎
+- [ ] browser-use 真实浏览器扫描
 - [ ] GitHub Marketplace Release
 
 ## 项目位置
