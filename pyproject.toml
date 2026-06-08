@@ -42,6 +42,8 @@ Documentation = "https://github.com/Mikehzp/agentvuln/blob/main/README.md"
 [project.scripts]
 agentsec = "agentsec.cli:main"
 agentvuln = "agentsec.cli:main"
+agentsec-mcp = "agentsec.mcp_server:main"
+agentvuln-mcp = "agentsec.mcp_server:main"
 
 [tool.setuptools.packages.find]
 include = ["agentsec*"]
