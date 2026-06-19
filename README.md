@@ -1,3 +1,4 @@
+<!-- mcp-name: io.github.Mikehzp/agentvuln -->
 
 <p align="center">
   <a href="https://pypi.org/project/agentvuln/"><img src="https://img.shields.io/badge/version-v0.4.0-blue" alt="PyPI version"></a>

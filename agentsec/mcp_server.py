@@ -14,22 +14,28 @@ from agentsec.registry import list_attacks as _list_registered_attacks
 
 server = FastMCP(
     "agentvuln",
-    instructions="""AI Agent Security Scanner â€” test AI agents against 18+ tool-calling vulnerabilities.
+    instructions="""AI Agent Security Scanner â€” scan AI agents for tool-calling vulnerabilities.
 
-## Quick Start
-1. Scan a live agent: `scan_agent(target="deepseek:deepseek-v4-flash", profile="quick")`
-2. Check a trace file: `scan_trace(trace_path="/path/to/trace.json")`
-3. Discover what's available: `list_attacks()`, `list_profiles()`, `list_templates()`
+## Example Usage
 
-## Target Formats
-- `deepseek:deepseek-v4-flash` â€” known provider + model
-- `openai:gpt-4o` â€” OpenAI
-- `openrouter:anthropic/claude-sonnet-4` â€” OpenRouter
-- `hermes-fast` â€” Direct API (uses Hermes config)
-- `hermes` â€” Full Hermes agent loop (slow, deep)
-- `api:https://url/v1:model` â€” Custom OpenAI-compatible endpoint
+"Scan the DeepSeek V4 agent with a quick profile"
+â†’ Runs 5 critical attacks, ~30s
 
-API keys are read from environment variables (e.g. DEEPSEEK_API_KEY, OPENAI_API_KEY).
+"Run a full security scan on openai:gpt-4o"
+â†’ Runs all 18 attacks in parallel, ~2min
+
+"Check this trace file for vulnerabilities"
+â†’ Scans an offline agent conversation log
+
+"Show me what attacks are available"
+â†’ Lists all 18 attack types with severity
+
+## Available Profiles
+- quick  â€” 5 attacks, ~30s (fast sanity check)
+- daily  â€” 8 attacks, ~2min (routine scan)
+- full   â€” all 18 attacks, ~2min (comprehensive)
+
+Just say what you want naturally â€” the agent will call the right tool.
 """,
 )
 
@@ -70,15 +76,20 @@ def scan_agent(
 ) -> str:
     """Run a security scan against a live AI agent target.
 
-    Supports online scanning against any OpenAI-compatible API.
-    API keys must be set in environment variables (DEEPSEEK_API_KEY, OPENAI_API_KEY, etc.).
+    Profiles:
+      quick â€” 5 critical attacks, ~30s (fast sanity check)
+      daily â€” 8 attacks, ~2min (routine scan)
+      full  â€” all 18 attacks, ~2min (comprehensive)
 
-    Full scans (18 attacks) run attacks in parallel (~2 min vs ~8 min sequential).
+    Targets: deepseek:deepseek-v4-flash, openai:gpt-4o,
+    openrouter:..., hermes-fast, api:https://url/v1:model
+
+    API keys read from env vars (DEEPSEEK_API_KEY, OPENAI_API_KEY, etc.).
 
     Args:
         target: Target specification (e.g. 'deepseek:deepseek-v4-flash', 'openai:gpt-4o',
                 'hermes-fast', 'api:https://url/v1:model')
-        profile: Scan profile â€” 'quick' (5 attacks), 'daily' (8 attacks), 'full' (all 18)
+        profile: Scan profile - 'quick' (5 attacks), 'daily' (8 attacks), 'full' (all 18)
         template: Optional agent simulation template name (from `list_templates()`)
         attacks: Optional comma-separated list of specific attack names to run (overrides profile)
 
@@ -212,60 +223,11 @@ def list_profiles() -> str:
         if attacks is None:
             result[name] = {"attack_count": len(all_attack_names), "attacks": all_attack_names}
         else:
-            result[name] = {"attack_count": len(attacks), "attacks": attacks}
-
-    return json.dumps(result, indent=2, ensure_ascii=False)
-
-
-@server.tool()
-def list_templates() -> str:
-    """List available agent simulation templates from the template marketplace.
-
-    Templates simulate specific agent frameworks (LangChain, Claude Code, etc.)
-    to test how different architectures respond to attacks.
-
-    Returns:
-        JSON string with template metadata (name, description, version, author).
-    """
-    try:
-        from agentsec.template_market import _ensure_dirs, INSTALLED_DIR
-        _ensure_dirs()
-        templates = []
-        for path in sorted(INSTALLED_DIR.glob("*.yaml")):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    import yaml
-                    data = yaml.safe_load(f)
-                    if isinstance(data, dict):
-                        templates.append({
-                            "name": data.get("name", path.stem),
-                            "severity": data.get("severity", ""),
-                            "description": data.get("description", ""),
-                            "path": str(path),
-                        })
-            except Exception:
-                templates.append({
-                    "name": path.stem,
-                    "severity": "?",
-                    "description": "Unable to parse",
-                    "path": str(path),
-                })
-        return json.dumps(templates, indent=2, ensure_ascii=False)
-    except Exception as e:
-        return json.dumps({"error": f"Failed to list templates: {e}"}, indent=2)
+            result[name] = {"atvGF6·2’Â&GF6·2#¢GF6·7Ğ ¢&WGW&â§6öâæGV×2‡&W7VÇBÂ–æFVçCÓ"ÂVç7W&Uö66–“ÔfÇ6R  ¤6W'fW"çFööÂ‚¦FVbÆ—7E÷FV×ÆFW2‚’Óâ7G# ¢""$Æ—7Bf–Æ&ÆRvVçB6–×VÆF–öâFV×ÆFW2g&öÒF†RFV×ÆFRÖ&¶WGÆ6Rà ¢FV×ÆFW26–×VÆFR7V6–f–2vVçBg&ÖWv÷&·2„Ææt6†–âÂ6ÆVFR6öFRÂWF2â¢FòFW7B†÷rF–ffW&VçB&6†—FV7GW&W2&W7öæBFòGF6·2à ¢&WGW&ç3 ¢¥4ôâ7G&–ærv—F‚FV×ÆFRÖWFFF†æÖRÂFW67&—F–öâÂfW'6–öâÂWF†÷"’à¢"" ¢G'“ ¢g&öÒvVçG6V2çFV×ÆFUöÖ&¶WB–×÷'BöVç7W&UöF—'2Â”å5DÄÄTEôD• ¢öVç7W&UöF—'2‚¢FV×ÆFW2ÒµĞ¢f÷"F‚–â6÷'FVB„”å5DÄÄTEôD•"ævÆö"‚"¢ç–ÖÂ"’“ ¢G'“ ¢v—F‚÷Vâ‡F‚Â'""ÂVæ6öF–æsÒ'WFbÓ‚"’2c ¢–×÷'B–ÖÀ¢FFÒ–ÖÂç6fUöÆöB†b¢–b—6–ç7Fæ6R†FFÂF–7B“ ¢FV×ÆFW2æVæB‡°¢&æÖR#¢FFævWB‚&æÖR"ÂF‚ç7FVÒ’À¢'6WfW&—G’#¢FFævWB‚'6WfW&—G’"Â""’À¢&FW67&—F–öâ#¢FFævWB‚&FW67&—F–öâ"Â""’À¢'F‚#¢7G"‡F‚’À¢Ò¢W†6WBW†6WF–öã ¢FV×ÆFW2æVæB‡°¢&æÖR#¢F‚ç7FVÒÀ¢'6WfW&—G’#¢#ò"À¢&FW67&—F–öâ#¢%Væ&ÆRFò'6R"À¢'F‚#¢7G"‡F‚’À¢Ò¢&WGW&â§6öâæGV×2‡FV×ÆFW2Â–æFVçCÓ"ÂVç7W&Uö66–“ÔfÇ6R¢W†6WBW†6WF–öâ2S ¢&WGW&â§6öâæGV×2‡²&W'
 
 
 @server.tool()
 def get_version() -> str:
     """Get the installed agentvuln/agentsec version."""
     from agentsec import __version__
-    return json.dumps({"version": __version__, "tool": "agentvuln-mcp"})
-
-
-def main():
-    """Run the MCP server over stdio transport."""
-    server.run(transport="stdio")
-
-
-if __name__ == "__main__":
-    main()
+    return json.dumps({"veuõ÷fW'6–öåõòÂ'FööÂ#¢&vVçGgVÆâÖÖ7'Ò  ¦FVbÖ–â‚“ ¢""%'VâF†RÔ56W'fW"÷fW"7FF–òG&ç7÷'Bâ"" ¢6W'fW"ç'Vâ‡G&ç7÷'CÒ'7FF–ò"  ¦–bõöæÖUõòÓÒ%õöÖ–åõò# ¢Ö–â‚ 
